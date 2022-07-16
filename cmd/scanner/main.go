@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"flag"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/neutrinocorp/cloudsync"
@@ -13,11 +15,17 @@ func main() {
 	var dirName string
 	var dirCfg string
 	var fileCfg string
+	homeDir, _ := os.UserHomeDir()
+	if homeDir != "" {
+		dirCfg = filepath.Join(homeDir, ".cloudsync")
+	}
+
 	flag.StringVar(&dirName, "d", "", "Directory to be scanned")
-	flag.StringVar(&dirCfg, "c", ".", "Directory for configuration files")
-	flag.StringVar(&fileCfg, "cf", "config.yaml", "Configuration file name")
+	flag.StringVar(&dirCfg, "c", dirCfg, "Directory for configuration files")
+	flag.StringVar(&fileCfg, "f", "config.yaml", "Configuration file name")
 	flag.Parse()
 
+	cloudsync.CreateConfigIfNotExists(dirCfg, fileCfg)
 	cfg, err := cloudsync.NewConfig(dirCfg, fileCfg, dirName)
 	if err != nil {
 		panic(err)

@@ -1,6 +1,7 @@
 package cloudsync
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,9 +31,9 @@ type Config struct {
 	filePath           string
 	ignoredKeysHashSet map[string]struct{}
 
-	RootDirectory string `yaml:"-"`
-	Cloud         CloudConfig
-	Scanner       ScannerConfig
+	RootDirectory string        `yaml:"-"`
+	Cloud         CloudConfig   `yaml:"cloud"`
+	Scanner       ScannerConfig `yaml:"scanner"`
 }
 
 func NewConfig(path, file, rootDirectory string) (Config, error) {
@@ -94,8 +95,8 @@ func SaveConfig(cfg Config) error {
 		return nil
 	}
 
-	log.Debug().Msg("cloudsync: Updating configuration file")
-	f, err := os.OpenFile(cfg.filePath, os.O_RDWR, 0644)
+	log.Debug().Msg("cloudsync: Saving configuration file")
+	f, err := os.OpenFile(cfg.filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}
@@ -104,4 +105,26 @@ func SaveConfig(cfg Config) error {
 	encoder := yaml.NewEncoder(f)
 	defer encoder.Close()
 	return encoder.Encode(cfg)
+}
+
+func CreateConfigIfNotExists(path, file string) bool {
+	filePath := filepath.Join(path, file)
+	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {
+		_ = os.Mkdir(path, os.ModePerm)
+	}
+	dirTmp, _ := os.ReadDir(path)
+	for _, entry := range dirTmp {
+		if file == entry.Name() {
+			return false
+		}
+	}
+	_ = SaveConfig(Config{
+		filePath:       filePath,
+		loadedTenantID: true,
+		Scanner: ScannerConfig{
+			PartitionID: ulid.Make().String(),
+		},
+	})
+
+	return true
 }
