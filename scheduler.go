@@ -23,9 +23,16 @@ func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc) {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
+		log.Debug().
+			Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
+			Uint64("current_upload_jobs", DefaultStats.GetCurrentUploadJobs()).
+			Uint64("pending_upload_jobs", DefaultStats.GetTotalUploadJobs()-DefaultStats.GetCurrentUploadJobs()).
+			Msg("cloudsync: System interruption detected, exiting")
 		cancel()
 		wg.Wait()
-		log.Debug().Msg("cloudsync: Gracefully closed all background tasks after interruption, exiting")
+		log.Debug().
+			Uint64("corrupted_upload_jobs", DefaultStats.GetTotalUploadJobs()-DefaultStats.GetCurrentUploadJobs()).
+			Msg("cloudsync: Gracefully closed all background tasks after interruption")
 		os.Exit(1)
 	}()
 }
@@ -81,6 +88,7 @@ func scheduleFileUpload(ctx context.Context, cfg Config, rel string, wg *sync.Wa
 		return
 	}
 	if objectUploadJobQueue != nil {
+		DefaultStats.increaseUploadJobs()
 		objectUploadJobQueue <- File{
 			Key:  rel,
 			Data: obj,

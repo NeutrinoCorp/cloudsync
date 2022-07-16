@@ -54,6 +54,7 @@ func (s *Scanner) Shutdown(ctx context.Context) error {
 		s.shutdownWg.Wait()
 		log.Info().
 			Str("took", time.Since(s.startTime).String()).
+			Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
 			Msg(" Completed all file upload jobs")
 	}
 	return nil

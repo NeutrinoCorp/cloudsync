@@ -43,6 +43,7 @@ func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sy
 				Str("took", time.Since(startTime).String()).
 				Str("object_key", j.Key).
 				Msgf("cloudsync: Uploaded file")
+			DefaultStats.decreaseUploadJobs()
 			wg.Done()
 		}(time.Now(), job)
 		select {
