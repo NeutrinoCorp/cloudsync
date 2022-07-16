@@ -1,0 +1,13 @@
+cloud:
+  region: us-east-2
+  bucket: ncorp-dev-cloudsync
+  access_key: XXXX
+  secret_key: XXXX
+scanner:
+  tenant_id: 01G82XT3907RASKY2JW8QSZ2RR
+  read_hidden: true
+  deep_traversing: false
+  ignored_keys:
+    - config.yaml
+    - '*.go'
+  log_errors: true
