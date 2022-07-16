@@ -8,8 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup) {
-	wg.Add(1)
+func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup, cfg Config) {
 	select {
 	case <-ctx.Done():
 		log.Debug().Msg("cloudsync: Shutting down workers")
@@ -18,6 +17,12 @@ func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup) {
 		objectUploadJobQueue = nil
 		objectUploadJobQueueErr = nil
 		wg.Done()
+		go func() {
+			if err := SaveConfig(cfg); err != nil {
+				log.Warn().Str("error", err.Error()).Msg(" Failed to update configuration file")
+			}
+			wg.Done()
+		}()
 	}
 }
 
@@ -31,7 +36,7 @@ func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sy
 			if err != nil && objectUploadJobQueueErr != nil {
 				objectUploadJobQueueErr <- ErrFileUpload{
 					Key:    j.Key,
-					parent: err,
+					Parent: err,
 				}
 			}
 			log.Info().
@@ -53,7 +58,7 @@ func ListenUploadErrors(ctx context.Context, cfg Config) {
 		if cfg.Scanner.LogErrors {
 			log.
 				Err(err).
-				Str("parent", err.parent.Error()).
+				Str("parent", err.Parent.Error()).
 				Msg("cloudsync: File upload failed")
 		}
 		select {

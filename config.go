@@ -5,10 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/oklog/ulid/v2"
-
+	"github.com/rs/zerolog/log"
 	"gopkg.in/yaml.v3"
 )
 
@@ -20,7 +18,7 @@ type CloudConfig struct {
 }
 
 type ScannerConfig struct {
-	PartitionID    string   `yaml:"tenant_id"`
+	PartitionID    string   `yaml:"partition_id"`
 	ReadHidden     bool     `yaml:"read_hidden"`
 	DeepTraversing bool     `yaml:"deep_traversing"`
 	IgnoredKeys    []string `yaml:"ignored_keys"`
@@ -32,11 +30,12 @@ type Config struct {
 	filePath           string
 	ignoredKeysHashSet map[string]struct{}
 
-	Cloud   CloudConfig
-	Scanner ScannerConfig
+	RootDirectory string `yaml:"-"`
+	Cloud         CloudConfig
+	Scanner       ScannerConfig
 }
 
-func NewConfig(path, file string) (Config, error) {
+func NewConfig(path, file, rootDirectory string) (Config, error) {
 	filePath := filepath.Join(path, file)
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -46,7 +45,8 @@ func NewConfig(path, file string) (Config, error) {
 
 	decoder := yaml.NewDecoder(f)
 	cfg := Config{
-		filePath: filePath,
+		RootDirectory: rootDirectory,
+		filePath:      filePath,
 	}
 	if err = decoder.Decode(&cfg); err != nil {
 		return cfg, err
@@ -89,13 +89,13 @@ func (c *Config) KeyIsIgnored(key string) bool {
 	return ok
 }
 
-func (c Config) SaveConfig() error {
-	if !c.loadedTenantID {
+func SaveConfig(cfg Config) error {
+	if !cfg.loadedTenantID {
 		return nil
 	}
 
 	log.Debug().Msg("cloudsync: Updating configuration file")
-	f, err := os.OpenFile(c.filePath, os.O_RDWR, 0644)
+	f, err := os.OpenFile(cfg.filePath, os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
@@ -103,5 +103,5 @@ func (c Config) SaveConfig() error {
 
 	encoder := yaml.NewEncoder(f)
 	defer encoder.Close()
-	return encoder.Encode(c)
+	return encoder.Encode(cfg)
 }

@@ -5,10 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/service/s3/types"
-
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/neutrinocorp/cloudsync"
 )
 
@@ -51,6 +50,8 @@ func (a *AmazonS3) CheckMod(ctx context.Context, key string, modTime time.Time, 
 	})
 	if err != nil && strings.Contains(err.Error(), "api error NotFound: Not Found") {
 		return true, nil // if not found, then allow object writing
+	} else if err != nil && strings.Contains(err.Error(), "api error Forbidden: Forbidden") {
+		return false, cloudsync.ErrFatalStorage // couldn't connect to
 	} else if err != nil {
 		return false, err
 	}

@@ -3,15 +3,10 @@ package main
 import (
 	"context"
 	"flag"
-	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/neutrinocorp/cloudsync"
 	"github.com/neutrinocorp/cloudsync/storage"
-	"github.com/rs/zerolog/log"
 )
 
 func main() {
@@ -23,42 +18,24 @@ func main() {
 	flag.StringVar(&fileCfg, "cf", "config.yaml", "Configuration file name")
 	flag.Parse()
 
-	cfg, err := cloudsync.NewConfig(dirCfg, fileCfg)
-	if err != nil {
-		panic(err)
-	}
-	awsCfg, err := config.LoadDefaultConfig(context.Background(),
-		config.WithRegion(cfg.Cloud.Region),
-		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.Cloud.AccessKey,
-			cfg.Cloud.SecretKey, "")))
+	cfg, err := cloudsync.NewConfig(dirCfg, fileCfg, dirName)
 	if err != nil {
 		panic(err)
 	}
 
-	st := storage.NewAmazonS3(s3.NewFromConfig(awsCfg), cfg)
-	rootCtx, cancel := context.WithCancel(context.Background())
-	wg := new(sync.WaitGroup)
-	shutdownWg := new(sync.WaitGroup)
-
-	cloudsync.ListenForSysInterruption(shutdownWg, cancel)
-	go cloudsync.ListenAndExecuteUploadJobs(rootCtx, st, wg)
-	go cloudsync.ListenUploadErrors(rootCtx, cfg)
-	go cloudsync.ShutdownUploadWorkers(rootCtx, shutdownWg)
-
-	startTime := time.Now()
-	log.Info().
-		Msg("cloudsync: Starting file upload jobs")
-	if err = cloudsync.ScheduleFileUploads(rootCtx, cfg, dirName, wg, st); err != nil {
+	blobStore, err := storage.NewBlobStorage(cfg, storage.AmazonS3Store)
+	if err != nil {
 		panic(err)
 	}
-	wg.Wait()
-	cancel()
-	shutdownWg.Wait()
-	log.Info().
-		Str("took", time.Since(startTime).String()).
-		Msg("cloudsync: Completed all file upload jobs")
 
-	if err = cfg.SaveConfig(); err != nil {
-		log.Warn().Str("error", err.Error()).Msg("cloudsync: Failed to update configuration file")
+	scanner := cloudsync.NewScanner(cfg) // blocking I/O
+	if err = scanner.Start(blobStore); err != nil {
+		panic(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*15)
+	defer cancel()
+	if err = scanner.Shutdown(ctx); err != nil {
+		panic(err)
 	}
 }

@@ -10,7 +10,7 @@ import (
 func TestConfig_KeyIsIgnored(t *testing.T) {
 	cfg := cloudsync.Config{
 		Scanner: cloudsync.ScannerConfig{
-			IgnoredKeys: []string{"*.go"},
+			IgnoredKeys: []string{"*.go", "Bar"},
 		},
 	}
 	out := cfg.KeyIsIgnored("foo.go")

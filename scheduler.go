@@ -2,6 +2,7 @@ package cloudsync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -29,20 +30,20 @@ func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc) {
 	}()
 }
 
-func ScheduleFileUploads(ctx context.Context, cfg Config, rootDirectory string, wg *sync.WaitGroup, st BlobStorage) error {
-	return filepath.WalkDir(rootDirectory, func(path string, d fs.DirEntry, err error) error {
+func ScheduleFileUploads(ctx context.Context, cfg Config, wg *sync.WaitGroup, st BlobStorage) error {
+	return filepath.WalkDir(cfg.RootDirectory, func(path string, d fs.DirEntry, err error) error {
 		isHidden := d.Name() != "." && strings.HasPrefix(d.Name(), ".")
-		if d.IsDir() && isHidden {
+		if d.IsDir() && (isHidden || cfg.KeyIsIgnored(d.Name())) {
 			return fs.SkipDir
 		} else if d.IsDir() || (isHidden && !cfg.Scanner.ReadHidden) || cfg.KeyIsIgnored(d.Name()) {
 			return nil // ignore
 		}
 
-		rel, err := filepath.Rel(rootDirectory, path)
+		rel, err := filepath.Rel(cfg.RootDirectory, path)
 		if err != nil && objectUploadJobQueueErr != nil {
 			objectUploadJobQueueErr <- ErrFileUpload{
 				Key:    d.Name(),
-				parent: err,
+				Parent: err,
 			}
 			return nil
 		}
@@ -62,7 +63,9 @@ func scheduleFileUpload(ctx context.Context, cfg Config, rel string, wg *sync.Wa
 
 	info, _ := d.Info()
 	wasMod, err := st.CheckMod(ctx, rel, info.ModTime(), info.Size())
-	if err != nil || !wasMod {
+	if err != nil && errors.Is(err, ErrFatalStorage) {
+		panic(err)
+	} else if err != nil || !wasMod {
 		wg.Done()
 		return
 	}
@@ -72,7 +75,7 @@ func scheduleFileUpload(ctx context.Context, cfg Config, rel string, wg *sync.Wa
 	if err != nil && objectUploadJobQueueErr != nil {
 		objectUploadJobQueueErr <- ErrFileUpload{
 			Key:    d.Name(),
-			parent: err,
+			Parent: err,
 		}
 		wg.Done()
 		return

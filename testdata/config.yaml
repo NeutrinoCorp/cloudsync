@@ -4,10 +4,11 @@ cloud:
   access_key: XXXX
   secret_key: XXXX
 scanner:
-  tenant_id: 01G82XT3907RASKY2JW8QSZ2RR
+  partition_id: 01G82XT3907RASKY2JW8QSZ2RR
   read_hidden: true
   deep_traversing: false
   ignored_keys:
+    - Bar
     - config.yaml
     - '*.go'
   log_errors: true
