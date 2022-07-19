@@ -23,3 +23,45 @@ variable "environment" {
   type        = string
   default     = "development"
 }
+
+variable "blob_bucket_standard_ia_days" {
+  description = "Days to move archives from Standard access to Standard Infrequent Access tier for blob bucket"
+  type        = number
+  default     = 30
+}
+
+variable "blob_bucket_intelligent_tier_days" {
+  description = "Days to move archives from Standard Infrequent Access to Intelligent tiering for blob bucket"
+  type        = number
+  default     = 60
+}
+
+variable "blob_bucket_glacier_archive_days" {
+  description = "Days to move archives from Intelligent tiering to Glacier Archive tier for blob bucket"
+  type        = number
+  default     = 180
+}
+
+variable "blob_bucket_glacier_deep_archive_days" {
+  description = "Days to move archives from Glacier Archive tier to Glacier Deep Archive tier for blob bucket"
+  type        = number
+  default     = 365
+}
+
+variable "blob_bucket_standard_ia_versioned_days" {
+  description = "Days to move archives from Standard access to Standard Infrequent Access tier for versioned objects in blob bucket"
+  type        = number
+  default     = 30
+}
+
+variable "blob_bucket_glacier_versioned_days" {
+  description = "Days to move archives from Standard Infrequent Access tier to Glacier tier for versioned objects in blob bucket"
+  type        = number
+  default     = 60
+}
+
+variable "blob_bucket_expiration_versioned_days" {
+  description = "Days to expire (permanently delete) versioned objects for versioned objects in blob bucket"
+  type        = number
+  default     = 90
+}
