@@ -4,5 +4,5 @@ locals {
     "development" : "dev"
   }
 
-  app_name = "ncorp-${local.env_short_names[var.environment]}-cloudsync"
+  app_name = local.env_short_names[var.environment] == "" ? "${var.org_short_name}-cloudsync" : "${var.org_short_name}-${local.env_short_names[var.environment]}-cloudsync"
 }

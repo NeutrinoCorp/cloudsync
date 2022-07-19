@@ -24,6 +24,11 @@ variable "environment" {
   default     = "development"
 }
 
+variable "org_short_name" {
+  description = "Short name of the organization or individual (e.g. ncorp, aruiz) used to generate semantic infrastructure naming and/or labels"
+  default     = "ncorp"
+}
+
 variable "blob_bucket_encrypt_key_removal_days" {
   description = "Days to wait for the blob bucket encryption key deletion"
   default     = 14
