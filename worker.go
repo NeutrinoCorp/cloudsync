@@ -16,13 +16,13 @@ func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup, cfg Config) 
 		close(objectUploadJobQueueErr)
 		objectUploadJobQueue = nil
 		objectUploadJobQueueErr = nil
-		wg.Done()
 		go func() {
 			if err := SaveConfig(cfg); err != nil {
 				log.Warn().Str("error", err.Error()).Msg(" Failed to update configuration file")
 			}
 			wg.Done()
 		}()
+		wg.Done()
 	}
 }
 
@@ -33,6 +33,7 @@ func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sy
 				Str("object_key", j.Key).
 				Msgf("cloudsync: Uploading file")
 			err := storage.Upload(ctx, j)
+			DefaultStats.decreaseUploadJobs()
 			if err != nil && objectUploadJobQueueErr != nil {
 				objectUploadJobQueueErr <- ErrFileUpload{
 					Key:    j.Key,
@@ -42,8 +43,9 @@ func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sy
 			log.Info().
 				Str("took", time.Since(startTime).String()).
 				Str("object_key", j.Key).
+				Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
+				Uint64("jobs_left", DefaultStats.GetCurrentUploadJobs()).
 				Msgf("cloudsync: Uploaded file")
-			DefaultStats.decreaseUploadJobs()
 			wg.Done()
 		}(time.Now(), job)
 		select {

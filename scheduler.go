@@ -26,12 +26,11 @@ func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc) {
 		log.Debug().
 			Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
 			Uint64("current_upload_jobs", DefaultStats.GetCurrentUploadJobs()).
-			Uint64("pending_upload_jobs", DefaultStats.GetTotalUploadJobs()-DefaultStats.GetCurrentUploadJobs()).
 			Msg("cloudsync: System interruption detected, exiting")
 		cancel()
 		wg.Wait()
 		log.Debug().
-			Uint64("corrupted_upload_jobs", DefaultStats.GetTotalUploadJobs()-DefaultStats.GetCurrentUploadJobs()).
+			Uint64("corrupted_upload_jobs", DefaultStats.GetCurrentUploadJobs()).
 			Msg("cloudsync: Gracefully closed all background tasks after interruption")
 		os.Exit(1)
 	}()
