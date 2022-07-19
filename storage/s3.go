@@ -11,14 +11,18 @@ import (
 	"github.com/neutrinocorp/cloudsync"
 )
 
+// AmazonS3 Amazon Simple Storage Service (S3) concrete implementation of cloudsync.BlobStorage.
 type AmazonS3 struct {
 	client   *s3.Client
 	bucket   *string
 	uploader *manager.Uploader
 }
 
+// compile-time interface impl. validation.
 var _ cloudsync.BlobStorage = &AmazonS3{}
 
+// NewAmazonS3 allocates a new AmazonS3 instance ready to perform underlying S3 API actions using cloudsync.BlobStorage
+// API.
 func NewAmazonS3(c *s3.Client, cfg cloudsync.Config) *AmazonS3 {
 	uploader := manager.NewUploader(c, func(u *manager.Uploader) {
 		u.Concurrency = 10
@@ -27,13 +31,13 @@ func NewAmazonS3(c *s3.Client, cfg cloudsync.Config) *AmazonS3 {
 	return &AmazonS3{client: c, bucket: &cfg.Cloud.Bucket, uploader: uploader}
 }
 
-func (a *AmazonS3) Upload(ctx context.Context, f cloudsync.File) error {
-	defer f.Data.Close()
+func (a *AmazonS3) Upload(ctx context.Context, obj cloudsync.Object) error {
+	defer obj.Data.Close()
 
 	_, err := a.uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            a.bucket,
-		Key:               &f.Key,
-		Body:              f.Data,
+		Key:               &obj.Key,
+		Body:              obj.Data,
 		ChecksumAlgorithm: types.ChecksumAlgorithmSha256,
 	})
 	if err != nil {

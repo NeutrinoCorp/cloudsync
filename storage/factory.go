@@ -10,19 +10,27 @@ import (
 	"github.com/neutrinocorp/cloudsync"
 )
 
+// ErrInvalidBlobStorage the given blob storage type is invalid.
 var ErrInvalidBlobStorage = errors.New("cloudsync: Invalid blob storage")
 
-type StoreType uint8
+// BlobStoreType a kind of blob storage (Amazon S3, Google Drive, Google Cloud Storage and/or Microsoft Azure Blob
+// Storage).
+type BlobStoreType uint8
 
 const (
-	UnknownStore StoreType = iota
+	_ BlobStoreType = iota
+	// AmazonS3Store blob storage for Amazon Simple Storage Service (S3).
 	AmazonS3Store
+	// GoogleDriveStore blob storage for Google Drive.
 	GoogleDriveStore
+	// GoogleCloudStore blob storage for Google Cloud (GCP) Storage Service.
 	GoogleCloudStore
+	// AzureBlobStore blob storage for Microsoft Azure Blob Storage Service.
 	AzureBlobStore
 )
 
-func NewBlobStorage(cfg cloudsync.Config, t StoreType) (cloudsync.BlobStorage, error) {
+// NewBlobStorage allocates a new cloudsync.BlobStorage concrete implementation based on given BlobStoreType.
+func NewBlobStorage(cfg cloudsync.Config, t BlobStoreType) (cloudsync.BlobStorage, error) {
 	switch t {
 	case AmazonS3Store:
 		awsCfg, err := config.LoadDefaultConfig(context.Background(),
@@ -33,6 +41,15 @@ func NewBlobStorage(cfg cloudsync.Config, t StoreType) (cloudsync.BlobStorage, e
 			return nil, err
 		}
 		return NewAmazonS3(s3.NewFromConfig(awsCfg), cfg), nil
+	case GoogleDriveStore:
+		// TODO: Add G Drive implementation
+		return nil, ErrInvalidBlobStorage
+	case GoogleCloudStore:
+		// TODO: Add GCP Storage implementation
+		return nil, ErrInvalidBlobStorage
+	case AzureBlobStore:
+		// TODO: Add MS Azure Blob implementation
+		return nil, ErrInvalidBlobStorage
 	default:
 		return nil, ErrInvalidBlobStorage
 	}

@@ -2,6 +2,9 @@ package cloudsync
 
 import "sync/atomic"
 
+// Stats contains counters used by internal processes to keep track of its operations.
+//
+// This struct is goroutine-safe as it relies on atomic operations.
 type Stats struct {
 	currentUploadJobs uint64
 	totalUploadJobs   uint64

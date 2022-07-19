@@ -8,6 +8,8 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Scanner main component which reads and schedules upload jobs based on the files found on directories specified
+// in Config.
 type Scanner struct {
 	cfg           Config
 	baseCtx       context.Context
@@ -16,6 +18,7 @@ type Scanner struct {
 	shutdownWg    sync.WaitGroup
 }
 
+// NewScanner allocates a new Scanner instance which will use specified Config.
 func NewScanner(cfg Config) *Scanner {
 	return &Scanner{
 		cfg:           cfg,
@@ -26,6 +29,7 @@ func NewScanner(cfg Config) *Scanner {
 	}
 }
 
+// Start bootstraps and runs internal processes to read files and schedule upload jobs.
 func (s *Scanner) Start(store BlobStorage) error {
 	s.baseCtx, s.baseCtxCancel = context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
@@ -45,6 +49,9 @@ func (s *Scanner) Start(store BlobStorage) error {
 	return nil
 }
 
+// Shutdown stops all internal process gracefully. Moreover, the shutdown process will stop if the specified
+// context was cancelled, avoiding application deadlocks if used with context.WithTimeout() in expense of
+// a corrupted shutdown.
 func (s *Scanner) Shutdown(ctx context.Context) error {
 	s.baseCtxCancel()
 	select {

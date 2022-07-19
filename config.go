@@ -11,6 +11,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// CloudConfig remote infrastructure and services configuration.
 type CloudConfig struct {
 	Region    string `yaml:"region"`
 	Bucket    string `yaml:"bucket"`
@@ -18,14 +19,31 @@ type CloudConfig struct {
 	SecretKey string `yaml:"secret_key"`
 }
 
+// ScannerConfig Scanner configuration.
 type ScannerConfig struct {
-	PartitionID    string   `yaml:"partition_id"`
-	ReadHidden     bool     `yaml:"read_hidden"`
-	DeepTraversing bool     `yaml:"deep_traversing"`
-	IgnoredKeys    []string `yaml:"ignored_keys"`
-	LogErrors      bool     `yaml:"log_errors"`
+	// PartitionID a Scanner instance will use this field to create logical partitions in the specified bucket.
+	//
+	// This could be used in many ways such as:
+	//
+	// - Create a multi-tenant environment.
+	//
+	// - Store data from several machines (maybe from within a network) into a single bucket without operational
+	// overhead.
+	//
+	// Note: This field is auto-generated using Unique Lexicographic IDs (ULID) if not found.
+	PartitionID string `yaml:"partition_id"`
+	// ReadHidden read from files using the '.' character prefix.
+	ReadHidden bool `yaml:"read_hidden"`
+	// DeepTraversing read every node until leafs are reached from a root directory tree. If set to false,
+	// Scanner will read only the root tree files.
+	DeepTraversing bool `yaml:"deep_traversing"`
+	// IgnoredKeys deny list of custom reserved file or folder keys. Scanner will skip items specified here.
+	IgnoredKeys []string `yaml:"ignored_keys"`
+	// LogErrors disable or enable logging of errors. Useful for development or overall process visibility purposes.
+	LogErrors bool `yaml:"log_errors"`
 }
 
+// Config Main application configuration.
 type Config struct {
 	loadedTenantID     bool
 	filePath           string
@@ -36,6 +54,7 @@ type Config struct {
 	Scanner       ScannerConfig `yaml:"scanner"`
 }
 
+// NewConfig allocates a Config instance used by internal components to perform its processes.
 func NewConfig(path, file, rootDirectory string) (Config, error) {
 	filePath := filepath.Join(path, file)
 	f, err := os.Open(filePath)
@@ -74,6 +93,7 @@ func newIgnoredKeysSet(keys []string) map[string]struct{} {
 	return m
 }
 
+// KeyIsIgnored verifies if a specified key was selected to be ignored.
 func (c *Config) KeyIsIgnored(key string) bool {
 	if c.ignoredKeysHashSet == nil {
 		c.ignoredKeysHashSet = newIgnoredKeysSet(c.Scanner.IgnoredKeys)
@@ -90,6 +110,7 @@ func (c *Config) KeyIsIgnored(key string) bool {
 	return ok
 }
 
+// SaveConfig stores the specified Config into host's physical disk.
 func SaveConfig(cfg Config) error {
 	if !cfg.loadedTenantID {
 		return nil
@@ -107,6 +128,9 @@ func SaveConfig(cfg Config) error {
 	return encoder.Encode(cfg)
 }
 
+// CreateConfigIfNotExists creates a path and/or Config file if not found.
+//
+// If no file was found, it will allocate a ULID as ScannerConfig.PartitionID.
 func CreateConfigIfNotExists(path, file string) bool {
 	filePath := filepath.Join(path, file)
 	if _, err := os.Stat(filePath); errors.Is(err, os.ErrNotExist) {

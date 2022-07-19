@@ -8,6 +8,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// ShutdownUploadWorkers closes internal job queues and stores new configuration variables (if required).
 func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup, cfg Config) {
 	select {
 	case <-ctx.Done():
@@ -26,9 +27,12 @@ func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup, cfg Config) 
 	}
 }
 
+// ListenAndExecuteUploadJobs waits and executes object upload jobs asynchronously received from internal queues.
+//
+// Will break listening loop if context was cancelled.
 func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sync.WaitGroup) {
 	for job := range objectUploadJobQueue {
-		go func(startTime time.Time, j File) {
+		go func(startTime time.Time, j Object) {
 			log.Info().
 				Str("object_key", j.Key).
 				Msgf("cloudsync: Uploading file")
@@ -56,6 +60,10 @@ func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sy
 	}
 }
 
+// ListenUploadErrors waits and performs actions when object upload jobs fail. These errors are sent asynchronously
+// through an internal error queue as all internal jobs are scheduled the same way.
+//
+// Will break listening loop if context was cancelled.
 func ListenUploadErrors(ctx context.Context, cfg Config) {
 	for err := range objectUploadJobQueueErr {
 		if cfg.Scanner.LogErrors {
