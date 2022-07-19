@@ -24,6 +24,11 @@ variable "environment" {
   default     = "development"
 }
 
+variable "blob_bucket_encrypt_key_removal_days" {
+  description = "Days to wait for the blob bucket encryption key deletion"
+  default     = 14
+}
+
 variable "blob_bucket_standard_ia_days" {
   description = "Days to move archives from Standard access to Standard Infrequent Access tier for blob bucket"
   type        = number

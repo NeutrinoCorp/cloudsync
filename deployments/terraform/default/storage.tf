@@ -71,3 +71,15 @@ resource "aws_s3_bucket_intelligent_tiering_configuration" "main_blob" {
     days        = var.blob_bucket_glacier_deep_archive_days
   }
 }
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "main_blob" {
+  depends_on = [aws_s3_bucket.main_blob]
+
+  bucket = local.app_name
+  rule {
+    apply_server_side_encryption_by_default {
+      kms_master_key_id = aws_kms_key.blob_bucket.arn
+      sse_algorithm     = "aws:kms"
+    }
+  }
+}
