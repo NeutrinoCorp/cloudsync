@@ -36,9 +36,8 @@ func (s *Scanner) Start(store BlobStorage) error {
 
 	ListenForSysInterruption(&s.shutdownWg, s.baseCtxCancel)
 	go ListenAndExecuteUploadJobs(s.baseCtx, store, wg)
-	go ListenUploadErrors(s.baseCtx, s.cfg)
-	s.shutdownWg.Add(2)
-	go ShutdownUploadWorkers(s.baseCtx, &s.shutdownWg, s.cfg)
+	go ListenUploadErrors(s.cfg)
+	go ShutdownUploadWorkers(s.baseCtx, &s.shutdownWg)
 
 	s.startTime = time.Now()
 	log.Info().Msg(" Starting file upload jobs")

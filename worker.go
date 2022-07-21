@@ -9,7 +9,8 @@ import (
 )
 
 // ShutdownUploadWorkers closes internal job queues and stores new configuration variables (if required).
-func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup, cfg Config) {
+func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup) {
+	wg.Add(1)
 	select {
 	case <-ctx.Done():
 		log.Debug().Msg("cloudsync: Shutting down workers")
@@ -17,12 +18,6 @@ func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup, cfg Config) 
 		close(objectUploadJobQueueErr)
 		objectUploadJobQueue = nil
 		objectUploadJobQueueErr = nil
-		go func() {
-			if err := SaveConfig(cfg); err != nil {
-				log.Warn().Str("error", err.Error()).Msg(" Failed to update configuration file")
-			}
-			wg.Done()
-		}()
 		wg.Done()
 	}
 }
@@ -32,31 +27,30 @@ func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup, cfg Config) 
 // Will break listening loop if context was cancelled.
 func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sync.WaitGroup) {
 	for job := range objectUploadJobQueue {
-		go func(startTime time.Time, j Object) {
+		go func(startTime time.Time, obj Object) {
+			defer wg.Done()
+			if obj.CleanupFunc != nil {
+				defer obj.CleanupFunc()
+			}
 			log.Info().
-				Str("object_key", j.Key).
-				Msgf("cloudsync: Uploading file")
-			err := storage.Upload(ctx, j)
+				Str("object_key", obj.Key).
+				Msg("cloudsync: Uploading file")
+			err := storage.Upload(ctx, obj)
 			DefaultStats.decreaseUploadJobs()
 			if err != nil && objectUploadJobQueueErr != nil {
 				objectUploadJobQueueErr <- ErrFileUpload{
-					Key:    j.Key,
+					Key:    obj.Key,
 					Parent: err,
 				}
+				return
 			}
 			log.Info().
 				Str("took", time.Since(startTime).String()).
-				Str("object_key", j.Key).
+				Str("object_key", obj.Key).
 				Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
 				Uint64("jobs_left", DefaultStats.GetCurrentUploadJobs()).
-				Msgf("cloudsync: Uploaded file")
-			wg.Done()
+				Msg("cloudsync: Uploaded file")
 		}(time.Now(), job)
-		select {
-		case <-ctx.Done():
-			break
-		default:
-		}
 	}
 }
 
@@ -64,18 +58,13 @@ func ListenAndExecuteUploadJobs(ctx context.Context, storage BlobStorage, wg *sy
 // through an internal error queue as all internal jobs are scheduled the same way.
 //
 // Will break listening loop if context was cancelled.
-func ListenUploadErrors(ctx context.Context, cfg Config) {
+func ListenUploadErrors(cfg Config) {
 	for err := range objectUploadJobQueueErr {
 		if cfg.Scanner.LogErrors {
 			log.
 				Err(err).
 				Str("parent", err.Parent.Error()).
 				Msg("cloudsync: File upload failed")
-		}
-		select {
-		case <-ctx.Done():
-			break
-		default:
 		}
 	}
 }

@@ -123,6 +123,9 @@ func scheduleFileUpload(args scheduleFileUploadArgs) {
 		objectUploadJobQueue <- Object{
 			Key:  args.relativePath,
 			Data: obj,
+			CleanupFunc: func() error {
+				return obj.Close()
+			},
 		}
 	}
 }

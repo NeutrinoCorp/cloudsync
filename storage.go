@@ -21,7 +21,6 @@ import (
 type ReadSeekerAt interface {
 	io.ReadSeeker
 	io.ReaderAt
-	io.Closer
 }
 
 // Object also known as file, information unit stored within a directory composed of an io.Reader holding
@@ -31,6 +30,8 @@ type Object struct {
 	Key string
 	// Data Binary Large Object reader instance.
 	Data ReadSeekerAt
+	// CleanupFunc frees resources like underlying buffers.
+	CleanupFunc func() error
 }
 
 // BlobStorage unit of non-volatile binary large objects (BLOB) persistence.
@@ -44,4 +45,20 @@ type BlobStorage interface {
 	// Returns ErrFatalStorage if non-recovery operation was returned from remote storage server
 	// (e.g. insufficient permissions, bucket does not exists).
 	CheckMod(ctx context.Context, key string, modTime time.Time, size int64) (bool, error)
+}
+
+type NoopBlobStorage struct {
+	UploadErr    error
+	CheckModBool bool
+	CheckModErr  error
+}
+
+var _ BlobStorage = NoopBlobStorage{}
+
+func (n NoopBlobStorage) Upload(_ context.Context, _ Object) error {
+	return n.UploadErr
+}
+
+func (n NoopBlobStorage) CheckMod(_ context.Context, _ string, _ time.Time, _ int64) (bool, error) {
+	return n.CheckModBool, n.CheckModErr
 }
