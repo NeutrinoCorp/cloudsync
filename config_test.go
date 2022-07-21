@@ -192,11 +192,11 @@ func TestConfig_KeyIsIgnored(t *testing.T) {
 
 func TestSaveConfig(t *testing.T) {
 	tests := []struct {
-		name        string
-		cfg         cloudsync.Config
-		willCleanup bool
-		willEmpty   bool
-		err         error
+		name          string
+		cfg           cloudsync.Config
+		willCleanup   bool
+		willFlushFile bool
+		err           error
 	}{
 		{
 			name: "Empty",
@@ -216,8 +216,8 @@ func TestSaveConfig(t *testing.T) {
 			cfg: cloudsync.Config{
 				FilePath: "./testdata/config.2.yaml",
 			},
-			err:       nil,
-			willEmpty: true,
+			err:           nil,
+			willFlushFile: true,
 		},
 	}
 
@@ -228,7 +228,7 @@ func TestSaveConfig(t *testing.T) {
 			if err != nil {
 				return
 			}
-			if tt.willEmpty {
+			if tt.willFlushFile {
 				_ = os.Truncate(tt.cfg.FilePath, 0)
 			}
 			if tt.willCleanup {
