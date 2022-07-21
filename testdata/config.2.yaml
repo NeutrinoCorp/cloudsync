@@ -1,0 +1,11 @@
+cloud:
+  region: ""
+  bucket: ""
+  access_key: ""
+  secret_key: ""
+scanner:
+  partition_id: ""
+  read_hidden: false
+  deep_traversing: false
+  ignored_keys: [ ]
+  log_errors: false

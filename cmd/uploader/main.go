@@ -25,7 +25,7 @@ func main() {
 	flag.StringVar(&fileCfg, "f", "config.yaml", "Configuration file name")
 	flag.Parse()
 
-	cloudsync.CreateConfigIfNotExists(dirCfg, fileCfg)
+	cloudsync.SaveConfigIfNotExists(dirCfg, fileCfg)
 	cfg, err := cloudsync.NewConfig(dirCfg, fileCfg, dirName)
 	if err != nil {
 		panic(err)

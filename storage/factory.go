@@ -33,10 +33,13 @@ const (
 func NewBlobStorage(cfg cloudsync.Config, t BlobStoreType) (cloudsync.BlobStorage, error) {
 	switch t {
 	case AmazonS3Store:
+		var credOpts config.LoadOptionsFunc
+		if cfg.Cloud.AccessKey != "" && cfg.Cloud.SecretKey != "" {
+			credOpts = config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.Cloud.AccessKey,
+				cfg.Cloud.SecretKey, ""))
+		}
 		awsCfg, err := config.LoadDefaultConfig(context.Background(),
-			config.WithRegion(cfg.Cloud.Region),
-			config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(cfg.Cloud.AccessKey,
-				cfg.Cloud.SecretKey, "")))
+			config.WithRegion(cfg.Cloud.Region), credOpts)
 		if err != nil {
 			return nil, err
 		}

@@ -32,8 +32,6 @@ func NewAmazonS3(c *s3.Client, cfg cloudsync.Config) *AmazonS3 {
 }
 
 func (a *AmazonS3) Upload(ctx context.Context, obj cloudsync.Object) error {
-	defer obj.Data.Close()
-
 	_, err := a.uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:            a.bucket,
 		Key:               &obj.Key,

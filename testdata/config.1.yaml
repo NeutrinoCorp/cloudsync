@@ -4,9 +4,8 @@ cloud:
   access_key: XXXX
   secret_key: XXXX
 scanner:
-  partition_id: 01G82XT3907RASKY2JW8QSZ2RR
   read_hidden: true
-  deep_traversing: true
+  deep_traversing: false
   ignored_keys:
     - Bar
     - config.yaml
