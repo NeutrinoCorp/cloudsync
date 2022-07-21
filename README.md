@@ -1,5 +1,12 @@
 # Neutrino CloudSync
 
+![Go Build](https://github.com/NeutrinoCorp/cloudsync/actions/workflows/go.yml/badge.svg)
+[![GoDoc](https://pkg.go.dev/badge/github.com/neutrinocorp/cloudsync)][godocs]
+[![Go Report Card](https://goreportcard.com/badge/github.com/neutrinocorp/cloudsync)](https://goreportcard.com/report/github.com/neutrinocorp/cloudsync)
+[![codebeat badge](https://codebeat.co/badges/2925d1e2-dbe0-4571-ba3c-0752db2b7e48)](https://codebeat.co/projects/github-com-neutrinocorp-cloudsync-master)
+[![Coverage Status][cov-img]][cov]
+[![Go Version][go-img]][go]
+
 `Neutrino CloudSync` is an open-source tool used to upload entire file folders from any host to any cloud.
 
 - [Neutrino CloudSync](#neutrino-cloudsync)
@@ -77,3 +84,11 @@ or
 ```shell
 user@machine:~ go run ./cmd/uploader/main.go -h
 ```
+
+[actions]: https://github.com/neutrinocorp/cloudsync/workflows/Testing/badge.svg?branch=master
+[godocs]: https://pkg.go.dev/github.com/neutrinocorp/cloudsync
+[cov-img]: https://codecov.io/gh/NeutrinoCorp/cloudsync/branch/master/graph/badge.svg
+[cov]: https://codecov.io/gh/NeutrinoCorp/cloudsync
+[go-img]: https://img.shields.io/github/go-mod/go-version/NeutrinoCorp/cloudsync?style=square
+[go]: https://github.com/NeutrinoCorp/cloudsync/blob/master/go.mod
+[examples]: https://github.com/neutrinocorp/cloudsync/tree/master/examples
