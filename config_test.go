@@ -195,6 +195,7 @@ func TestSaveConfig(t *testing.T) {
 		name        string
 		cfg         cloudsync.Config
 		willCleanup bool
+		willEmpty   bool
 		err         error
 	}{
 		{
@@ -215,7 +216,8 @@ func TestSaveConfig(t *testing.T) {
 			cfg: cloudsync.Config{
 				FilePath: "./testdata/config.2.yaml",
 			},
-			err: nil,
+			err:       nil,
+			willEmpty: true,
 		},
 	}
 
@@ -225,6 +227,9 @@ func TestSaveConfig(t *testing.T) {
 			assert.IsType(t, tt.err, err)
 			if err != nil {
 				return
+			}
+			if tt.willEmpty {
+				_ = os.Truncate(tt.cfg.FilePath, 0)
 			}
 			if tt.willCleanup {
 				_ = os.Remove(tt.cfg.FilePath) // cleanup
