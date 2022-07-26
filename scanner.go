@@ -2,7 +2,11 @@ package cloudsync
 
 import (
 	"context"
+	"errors"
+	"os"
+	"os/signal"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -31,16 +35,23 @@ func NewScanner(cfg Config) *Scanner {
 
 // Start bootstraps and runs internal processes to read files and schedule upload jobs.
 func (s *Scanner) Start(store BlobStorage) error {
+	if store == nil {
+		return errors.New("cloudsync: Invalid blob storage")
+	}
+
 	s.baseCtx, s.baseCtxCancel = context.WithCancel(context.Background())
 	wg := new(sync.WaitGroup)
 
-	ListenForSysInterruption(&s.shutdownWg, s.baseCtxCancel)
+	sysChan := make(chan os.Signal, 2)
+	signal.Notify(sysChan, os.Interrupt, syscall.SIGTERM)
+	ListenForSysInterruption(&s.shutdownWg, s.baseCtxCancel, sysChan)
+
 	go ListenAndExecuteUploadJobs(s.baseCtx, store, wg)
 	go ListenUploadErrors(s.cfg)
 	go ShutdownUploadWorkers(s.baseCtx, &s.shutdownWg)
 
 	s.startTime = time.Now()
-	log.Info().Msg(" Starting file upload jobs")
+	log.Info().Msg("Starting file upload jobs")
 	if err := ScheduleFileUploads(s.baseCtx, s.cfg, wg, store); err != nil {
 		return err
 	}
@@ -57,11 +68,13 @@ func (s *Scanner) Shutdown(ctx context.Context) error {
 	case <-ctx.Done():
 		return nil
 	default:
-		s.shutdownWg.Wait()
-		log.Info().
-			Str("took", time.Since(s.startTime).String()).
-			Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
-			Msg(" Completed all file upload jobs")
+		go func() {
+			s.shutdownWg.Wait()
+			log.Info().
+				Str("took", time.Since(s.startTime).String()).
+				Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
+				Msg("Completed all file upload jobs")
+		}()
 	}
 	return nil
 }

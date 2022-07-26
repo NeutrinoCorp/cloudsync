@@ -14,10 +14,14 @@ func ShutdownUploadWorkers(ctx context.Context, wg *sync.WaitGroup) {
 	select {
 	case <-ctx.Done():
 		log.Debug().Msg("cloudsync: Shutting down workers")
-		close(objectUploadJobQueue)
-		close(objectUploadJobQueueErr)
-		objectUploadJobQueue = nil
-		objectUploadJobQueueErr = nil
+		if objectUploadJobQueue != nil {
+			close(objectUploadJobQueue)
+			objectUploadJobQueue = nil
+		}
+		if objectUploadJobQueueErr != nil {
+			close(objectUploadJobQueueErr)
+			objectUploadJobQueueErr = nil
+		}
 		wg.Done()
 	}
 }

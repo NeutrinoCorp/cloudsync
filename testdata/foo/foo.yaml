@@ -1,0 +1,13 @@
+cloud:
+  region: us-east-2
+  bucket: ncorp-dev-cloudsync
+  access_key: XXXX
+  secret_key: XXXX
+scanner:
+  read_hidden: true
+  deep_traversing: false
+  ignored_keys:
+    - Bar
+    - config.yaml
+    - '*.go'
+  log_errors: true

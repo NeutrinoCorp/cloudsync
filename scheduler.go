@@ -2,15 +2,12 @@ package cloudsync
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/rs/zerolog/log"
 )
@@ -24,11 +21,9 @@ var objectUploadJobQueueErr = make(chan ErrFileUpload)
 
 // ListenForSysInterruption waits and gracefully shuts down internal workers when an external agent sends
 // a cancellation signal (e.g. pressing Ctrl+C on shell session running the program).
-func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc) {
-	c := make(chan os.Signal, 2)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc, sysChan <-chan os.Signal) {
 	go func() {
-		<-c
+		<-sysChan
 		log.Debug().
 			Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
 			Uint64("current_upload_jobs", DefaultStats.GetCurrentUploadJobs()).
@@ -38,7 +33,6 @@ func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc) {
 		log.Debug().
 			Uint64("corrupted_upload_jobs", DefaultStats.GetCurrentUploadJobs()).
 			Msg("cloudsync: Gracefully closed all background tasks after interruption")
-		os.Exit(1)
 	}()
 }
 
@@ -50,8 +44,12 @@ func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc) {
 // '.' prefix character) or object/folder key was specified to be ignored explicitly in Config file.
 func ScheduleFileUploads(ctx context.Context, cfg Config, wg *sync.WaitGroup, storage BlobStorage) error {
 	return filepath.WalkDir(cfg.RootDirectory, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		isHidden := d.Name() != "." && strings.HasPrefix(d.Name(), ".")
-		if d.IsDir() && (isHidden || cfg.KeyIsIgnored(d.Name())) {
+		if d.IsDir() && ((isHidden || cfg.KeyIsIgnored(d.Name())) || (!cfg.Scanner.DeepTraversing && cfg.RootDirectory != path)) {
 			return fs.SkipDir
 		} else if d.IsDir() || (isHidden && !cfg.Scanner.ReadHidden) || cfg.KeyIsIgnored(d.Name()) {
 			return nil // ignore
@@ -66,15 +64,16 @@ func ScheduleFileUploads(ctx context.Context, cfg Config, wg *sync.WaitGroup, st
 			return nil
 		}
 
+		info, _ := d.Info()
 		wg.Add(1)
 		go scheduleFileUpload(scheduleFileUploadArgs{
 			ctx:          ctx,
 			cfg:          cfg,
-			dirEntry:     d,
-			path:         path,
-			relativePath: rel,
 			wg:           wg,
 			storage:      storage,
+			path:         path,
+			relativePath: rel,
+			info:         info,
 		})
 		return nil
 	})
@@ -83,11 +82,11 @@ func ScheduleFileUploads(ctx context.Context, cfg Config, wg *sync.WaitGroup, st
 type scheduleFileUploadArgs struct {
 	ctx          context.Context
 	cfg          Config
-	dirEntry     fs.DirEntry
-	path         string
-	relativePath string
 	wg           *sync.WaitGroup
 	storage      BlobStorage
+	path         string
+	relativePath string
+	info         fs.FileInfo
 }
 
 // scheduleFileUpload performs the actual scheduling process for an object upload job.
@@ -99,11 +98,14 @@ func scheduleFileUpload(args scheduleFileUploadArgs) {
 	}
 	args.relativePath = strings.ReplaceAll(args.relativePath, "\\", "/")
 
-	info, _ := args.dirEntry.Info()
-	wasMod, err := args.storage.CheckMod(args.ctx, args.relativePath, info.ModTime(), info.Size())
-	if err != nil && errors.Is(err, ErrFatalStorage) {
-		panic(err)
-	} else if err != nil || !wasMod {
+	wasMod, err := args.storage.CheckMod(args.ctx, args.relativePath, args.info.ModTime(), args.info.Size())
+	if !wasMod && err != nil && objectUploadJobQueueErr != nil {
+		objectUploadJobQueueErr <- ErrFileUpload{
+			Key:    args.info.Name(),
+			Parent: err,
+		}
+	}
+	if !wasMod || err != nil {
 		args.wg.Done()
 		return
 	}
@@ -112,7 +114,7 @@ func scheduleFileUpload(args scheduleFileUploadArgs) {
 	obj, err = os.Open(args.path)
 	if err != nil && objectUploadJobQueueErr != nil {
 		objectUploadJobQueueErr <- ErrFileUpload{
-			Key:    args.dirEntry.Name(),
+			Key:    args.info.Name(),
 			Parent: err,
 		}
 		args.wg.Done()

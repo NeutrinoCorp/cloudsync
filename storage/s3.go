@@ -50,13 +50,17 @@ func (a *AmazonS3) CheckMod(ctx context.Context, key string, modTime time.Time, 
 		Key:               &key,
 		IfUnmodifiedSince: &modTime,
 	})
-	if err != nil && strings.Contains(err.Error(), "api error NotFound: Not Found") {
+	if err == nil {
+		return out.ContentLength < size || out.LastModified.Before(modTime), nil
+	}
+	switch {
+	case strings.HasSuffix(err.Error(), "api error NotFound: Not Found"):
 		return true, nil // if not found, then allow object writing
-	} else if err != nil && strings.Contains(err.Error(), "api error Forbidden: Forbidden") {
-		return false, cloudsync.ErrFatalStorage // couldn't connect to
-	} else if err != nil {
+	case strings.HasSuffix(err.Error(), "api error Forbidden: Forbidden"):
+		return false, cloudsync.ErrFatalStorage
+	case strings.HasSuffix(err.Error(), "api error PreconditionFailed: Precondition Failed"):
+		return false, nil // object exists, ignore error
+	default:
 		return false, err
 	}
-
-	return out.ContentLength < size || out.LastModified.Before(modTime), nil
 }
