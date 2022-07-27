@@ -1,9 +1,7 @@
-.PHONY: help run
-help:
-	go run ./cmd/uploader/main.go -h
+.PHONY: help run build
 
-run:
-	go run ./cmd/uploader/main.go -d $(directory)
+build:
+	go build -o cloudsync$(extension) ./cmd/cli/main.go
 
 test:
 	go test ./... -v --cover
