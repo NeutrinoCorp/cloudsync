@@ -30,7 +30,7 @@ func testShutdownUploadWorkers(t *testing.T) {
 	wg.Wait()
 	runtime.Gosched()
 	runtime.GC()
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond)
 	require.Equal(t, initRoutines, runtime.NumGoroutine())
 }
 
@@ -46,7 +46,7 @@ func testListenUploadErrors(t *testing.T) {
 	objectUploadJobQueueErr = nil
 	runtime.Gosched()
 	runtime.GC()
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond)
 	require.Equal(t, initRoutines, runtime.NumGoroutine())
 }
 
@@ -80,6 +80,6 @@ func testListenUpload(t *testing.T) {
 	objectUploadJobQueueErr = nil
 	runtime.Gosched()
 	runtime.GC()
-	time.Sleep(time.Millisecond * 1000)
+	time.Sleep(time.Millisecond)
 	require.Equal(t, initRoutines, runtime.NumGoroutine())
 }

@@ -179,46 +179,48 @@ func testScheduleFileUploads(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		ctx := context.TODO()
-		if objectUploadJobQueue == nil {
-			objectUploadJobQueue = make(chan Object, 0)
-		}
-		if objectUploadJobQueueErr == nil {
-			objectUploadJobQueueErr = make(chan ErrFileUpload, 0)
-		}
-		wg := sync.WaitGroup{}
-		mu := sync.Mutex{}
-		outKeys := make([]string, 0, len(tt.expReceivedKeys))
-		err := ScheduleFileUploads(ctx, tt.cfg, &wg, tt.storage)
-		assert.Equal(t, tt.expErr, err != nil)
-		go func() {
-			for work := range objectUploadJobQueue {
-				mu.Lock()
-				outKeys = append(outKeys, work.Key)
-				mu.Unlock()
-				_ = work.CleanupFunc()
-				wg.Done()
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.TODO()
+			if objectUploadJobQueue == nil {
+				objectUploadJobQueue = make(chan Object, 0)
 			}
-		}()
-		go func() { // required to avoid routine deadlock error
-			for range objectUploadJobQueueErr {
+			if objectUploadJobQueueErr == nil {
+				objectUploadJobQueueErr = make(chan ErrFileUpload, 0)
 			}
-		}()
-		wg.Wait()
-		if objectUploadJobQueue != nil {
-			close(objectUploadJobQueue)
-			objectUploadJobQueue = nil
-		}
-		if objectUploadJobQueueErr != nil {
-			close(objectUploadJobQueueErr)
-			objectUploadJobQueueErr = nil
-		}
+			wg := sync.WaitGroup{}
+			mu := sync.Mutex{}
+			outKeys := make([]string, 0, len(tt.expReceivedKeys))
+			err := ScheduleFileUploads(ctx, tt.cfg, &wg, tt.storage)
+			assert.Equal(t, tt.expErr, err != nil)
+			go func() {
+				for work := range objectUploadJobQueue {
+					mu.Lock()
+					outKeys = append(outKeys, work.Key)
+					mu.Unlock()
+					_ = work.CleanupFunc()
+					wg.Done()
+				}
+			}()
+			go func() { // required to avoid routine deadlock error
+				for range objectUploadJobQueueErr {
+				}
+			}()
+			wg.Wait()
+			if objectUploadJobQueue != nil {
+				close(objectUploadJobQueue)
+				objectUploadJobQueue = nil
+			}
+			if objectUploadJobQueueErr != nil {
+				close(objectUploadJobQueueErr)
+				objectUploadJobQueueErr = nil
+			}
 
-		require.Len(t, outKeys, len(tt.expReceivedKeys))
-		for _, v := range outKeys {
-			_, ok := tt.expReceivedKeys[v]
-			assert.True(t, ok)
-		}
+			require.Len(t, outKeys, len(tt.expReceivedKeys))
+			for _, v := range outKeys {
+				_, ok := tt.expReceivedKeys[v]
+				assert.True(t, ok)
+			}
+		})
 	}
 }
 
