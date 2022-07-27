@@ -68,13 +68,11 @@ func (s *Scanner) Shutdown(ctx context.Context) error {
 	case <-ctx.Done():
 		return nil
 	default:
-		go func() {
-			s.shutdownWg.Wait()
-			log.Info().
-				Str("took", time.Since(s.startTime).String()).
-				Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
-				Msg("Completed all file upload jobs")
-		}()
+		s.shutdownWg.Wait()
+		log.Info().
+			Str("took", time.Since(s.startTime).String()).
+			Uint64("total_upload_jobs", DefaultStats.GetTotalUploadJobs()).
+			Msg("Completed all file upload jobs")
 	}
 	return nil
 }

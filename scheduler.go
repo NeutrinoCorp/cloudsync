@@ -43,6 +43,10 @@ func ListenForSysInterruption(wg *sync.WaitGroup, cancel context.CancelFunc, sys
 // Furthermore, based on specified Config, a traversing process might get skipped if folder is hidden (uses
 // '.' prefix character) or object/folder key was specified to be ignored explicitly in Config file.
 func ScheduleFileUploads(ctx context.Context, cfg Config, wg *sync.WaitGroup, storage BlobStorage) error {
+	cfg.RootDirectory = strings.TrimSuffix(cfg.RootDirectory, "\"")
+	log.Info().
+		Str("root_directory", cfg.RootDirectory).
+		Msg("Starting directory upload")
 	return filepath.WalkDir(cfg.RootDirectory, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err

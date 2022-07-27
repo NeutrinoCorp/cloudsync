@@ -68,6 +68,7 @@ func NewConfig(path, file, rootDirectory string) (Config, error) {
 		return Config{}, err
 	}
 
+	log.Debug().Str("path", filePath).Msg("Loaded config")
 	if cfg.Scanner.PartitionID == "" {
 		cfg.Scanner.PartitionID = ulid.Make().String() // set a tenant id by default
 	}
