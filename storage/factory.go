@@ -27,11 +27,24 @@ const (
 	GoogleCloudStore
 	// AzureBlobStore blob storage for Microsoft Azure Blob Storage Service.
 	AzureBlobStore
+
+	AmazonS3Str    = "AMAZON_S3"
+	GoogleDriveStr = "GOOGLE_DRIVE"
+	GoogleCloudStr = "GCP_STORAGE"
+	AzureBlobStr   = "MS_AZURE_BLOB"
 )
 
+// BlobStoreMap readable name mapping to BlobStoreType.
+var BlobStoreMap = map[string]BlobStoreType{
+	AmazonS3Str:    AmazonS3Store,
+	GoogleDriveStr: GoogleDriveStore,
+	GoogleCloudStr: GoogleCloudStore,
+	AzureBlobStr:   AzureBlobStore,
+}
+
 // NewBlobStorage allocates a new cloudsync.BlobStorage concrete implementation based on given BlobStoreType.
-func NewBlobStorage(cfg cloudsync.Config, t BlobStoreType) (cloudsync.BlobStorage, error) {
-	switch t {
+func NewBlobStorage(cfg cloudsync.Config, storageType string) (cloudsync.BlobStorage, error) {
+	switch BlobStoreMap[storageType] {
 	case AmazonS3Store:
 		var credOpts config.LoadOptionsFunc
 		if cfg.Cloud.AccessKey != "" && cfg.Cloud.SecretKey != "" {
