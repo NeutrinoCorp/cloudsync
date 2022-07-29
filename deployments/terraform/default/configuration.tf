@@ -34,6 +34,11 @@ variable "blob_bucket_encrypt_key_removal_days" {
   default     = 14
 }
 
+variable "blob_bucket_encrypt_key_enable_rotation" {
+  description = "Enable key rotation of the blob bucket encryption key"
+  default     = true
+}
+
 variable "blob_bucket_standard_ia_days" {
   description = "Days to move archives from Standard access to Standard Infrequent Access tier for blob bucket"
   type        = number

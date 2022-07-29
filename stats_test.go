@@ -46,3 +46,23 @@ func TestStats_GetCurrentUploadJobs(t *testing.T) {
 	wg.Wait()
 	assert.Equal(t, uint64(1), stats.GetCurrentUploadJobs())
 }
+
+func TestStats_GetTotalFailedJobs(t *testing.T) {
+	wg := sync.WaitGroup{}
+	wg.Add(3)
+	stats := &Stats{}
+	go func() {
+		stats.increaseFailedJobs()
+		wg.Done()
+	}()
+	go func() {
+		stats.increaseFailedJobs()
+		wg.Done()
+	}()
+	go func() {
+		stats.increaseFailedJobs()
+		wg.Done()
+	}()
+	wg.Wait()
+	assert.Equal(t, uint64(3), stats.GetTotalFailedJobs())
+}

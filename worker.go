@@ -70,5 +70,6 @@ func ListenUploadErrors(cfg Config) {
 				Str("parent", err.Parent.Error()).
 				Msg("cloudsync: File upload failed")
 		}
+		DefaultStats.increaseFailedJobs()
 	}
 }

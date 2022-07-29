@@ -8,6 +8,7 @@ import "sync/atomic"
 type Stats struct {
 	currentUploadJobs uint64
 	totalUploadJobs   uint64
+	totalFailedJobs   uint64
 }
 
 var DefaultStats = &Stats{}
@@ -28,4 +29,12 @@ func (s Stats) GetTotalUploadJobs() uint64 {
 
 func (s Stats) GetCurrentUploadJobs() uint64 {
 	return atomic.LoadUint64(&s.currentUploadJobs)
+}
+
+func (s *Stats) increaseFailedJobs() {
+	atomic.AddUint64(&s.totalFailedJobs, 1)
+}
+
+func (s Stats) GetTotalFailedJobs() uint64 {
+	return atomic.LoadUint64(&s.totalFailedJobs)
 }
