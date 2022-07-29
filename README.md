@@ -158,29 +158,27 @@ Windows (Powershell)
 PS C:\Users\aruizeac> cloudsync -h
 ```
 
+_Notice the program does not require `.exe` nor `./` characters anymore._
+
 ### Update Configuration
 
 `CloudSync` will create a new configuration file when running an operation _(e.g. upload command)_.
 
-This file will be created under user's homepath inside a folder named _.cloudsync_. (/home/{USERNAME}/.cloudsync in **
-Linux/Darwin**, C:\Users\\{USERNAME}\\.cloudsync in **Windows**).
+This file will be created under user's homepath inside a folder named _.cloudsync_. (/home/{USERNAME}/.cloudsync in **Linux/Darwin**, C:\Users\\{USERNAME}\\.cloudsync in **Windows**).
 
 *DO NOT forget to enable view secret files/folders feature to see this folder.
 
-| Field                              |    Type     | Description                                                                       |
-|------------------------------------|:-----------:|:----------------------------------------------------------------------------------|
-| cloud.region                       |   string    | Infrastructure region location _(e.g. us-east-1, us-west-2,                       |
-| eu-central-1)_                     |             |                                                                                   |
-| cloud.bucket                       |   string    | Blob storage bucket name                                                          |
-| cloud.access_key                   |   string    | Cloud account access key used to interact with infrastructure                     |
-| cloud.secret_key                   |   string    | Cloud account access secret key used to interact with infrastructure              |
-| scanner.partition_id               |   string    | Identifier used to shard data within the blob storage _(auto-generated using ULID |
-| and might represent a machine ID)_ |             |                                                                                   |
-| scanner.read_hidden                |   boolean   | Enable scanning for hidden files                                                  |
-| scanner.deep_traversing            |   boolean   | Enable scanning for child paths                                                   |
-| scanner.ignored_keys               | string list | File or folder names to be ignored by scanner _(accepts wildcard patterns,        |
-| e.g. *.go, *.java_)                |             |                                                                                   |
-| scanner.log_errors                 |   boolean   | Enable error logging                                                              |
+| Field                            |    Type     | Description                                                                                                          |
+|----------------------------------|:-----------:|:---------------------------------------------------------------------------------------------------------------------|
+| cloud.region                     |   string    | Infrastructure region location _(e.g. us-east-1, us-west-2, eu-central-1)_                                           |
+| cloud.bucket                     |   string    | Blob storage bucket name                                                                                             |
+| cloud.access_key                 |   string    | Cloud account access key used to interact with infrastructure                                                        |
+| cloud.secret_key                 |   string    | Cloud account access secret key used to interact with infrastructure                                                 |
+| scanner.partition_id             |   string    | Identifier used to shard data within the blob storage _(auto-generated using ULID and might represent a machine ID)_ |
+| scanner.read_hidden              |   boolean   | Enable scanning for hidden files                                                                                     |
+| scanner.deep_traversing          |   boolean   | Enable scanning for child paths                                                                                      |
+| scanner.ignored_keys             | string list | File or folder names to be ignored by scanner _(accepts wildcard patterns, e.g. *.go, *.java_)                       |
+| scanner.log_errors               |   boolean   | Enable error logging                                                                                                 |
 
 ### Upload Files (using compiled binary file)
 
