@@ -45,7 +45,7 @@ infrastructure.
 
 - Go 1.18+
 - Terraform
-- AWS CLI with IAM user credentials configured with enough permissions to create/update:
+- AWS IAM user credentials configured with enough permissions to create/update:
     - S3 bucket
     - KMS key and alias
     - IAM user
@@ -53,6 +53,7 @@ infrastructure.
 **Optional**
 
 - Make
+- AWS CLI
 
 _NOTE:_ `CloudSync` is able to use pre-existing cloud infrastructure if desired.
 
